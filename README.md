@@ -9,7 +9,7 @@ php artisan vendor:publish --tag=serverless-config
 Reference: [Serverless Laravel applications - Bref](https://bref.sh/docs/frameworks/laravel.html)
 
 ## ARM architecture
-Use ARM
+Use ARM, cheaper and better performance.
 ```
 functions:
   web:
@@ -17,8 +17,9 @@ functions:
 ```
 
 Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
+
 ## VPC
-Create 2 SSM StringList parameters for subnet IDs and security group IDs and add them to serverless.yml
+To access resources in VPC (e.g., RDS), create 2 SSM StringList parameters for subnet IDs and security group IDs respectively, then add refer to them in serverless.yml by adding the following lines:
 ```
 functions:
   web:
@@ -26,6 +27,9 @@ functions:
       securityGroupIds: ${ssm:/ken/bref/securityGroupIds}
       subnetIds: ${ssm:/ken/bref/privateSubnetIds}
 ```
+
+Reference: [Database - Bref](https://bref.sh/docs/environment/database.html)
+
 ## Serverless S3 sync
 Install Serverless S3 sync
 ```
@@ -82,6 +86,8 @@ provider:
   environment:
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
 ```
+Note: Alternatively, you can use `serverless-lift` as recommended by Bref, but we don't use it here because some of our deployment are behind VPN access.
+
 Reference: [Serverless S3 Sync](https://www.serverless.com/plugins/serverless-s3-sync)
 
 ## IAM
@@ -126,6 +132,8 @@ provider:
   iam:
     role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda-laravel-role'
 ```
+
+Reference: [Serverless Framework - IAM Permissions For Functions](https://www.serverless.com/framework/docs/providers/aws/guide/iam)
 
 ## Queue
 Create scheduler:
