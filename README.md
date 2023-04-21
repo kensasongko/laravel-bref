@@ -17,8 +17,8 @@ functions:
 ```
 
 Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
-## vpc
-Create SSM StringList parameter for subnet IDs and security group IDs and add them to serverless.yml
+## VPC
+Create 2 SSM StringList parameters for subnet IDs and security group IDs and add them to serverless.yml
 ```
 functions:
   web:
@@ -157,3 +157,7 @@ resources:
         ReceiveMessageWaitTimeSeconds: 20
         VisibilityTimeout: 120
 ```
+
+## Notes:
+- [Serverless offline](https://www.serverless.com/plugins/serverless-offline) doesn't work, for local development refer to [Local development for web apps](https://bref.sh/docs/web-apps/local-development.html).
+- Serverless dev also doesn't work.
