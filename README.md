@@ -55,6 +55,7 @@ For RDS access, store RDS credentials in SSM. Modify cdk-core projects to also s
 For projects with separate read and write connections:
 - `/ken/rds/readWriteHost`: RDS writer endpoint (or RDS proxy read/write endpoint if you use it)
 - `/ken/rds/readOnlyHost`: RDS reader endpoint (or RDS proxy read-only endpoint if you use it)
+
 Otherwise:
 - `/ken/rds/host`: RDS host
 
