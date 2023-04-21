@@ -86,7 +86,9 @@ provider:
   environment:
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
 ```
-Note: Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access.
+Note: 
+- Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access.
+- For API, skip this step.
 
 Reference: [Serverless S3 Sync](https://www.serverless.com/plugins/serverless-s3-sync)
 
@@ -144,6 +146,7 @@ SESSION_STORE=dynamodb
 ```
 
 ## Queue
+** TODO: Experiment with `serverless-lift` **
 Create scheduler:
 ```
 functions:
