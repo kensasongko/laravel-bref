@@ -9,6 +9,12 @@ provider:
     APP_ENV: production # Or use ${sls:stage} if you want the environment to match the stage
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
     SQS_PREFIX: !Sub 'https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}'
+    DB_CONNECTION: mysql
+    DB_HOST: ${ssm:/ken/rds/host}
+    DB_PORT: ${ssm:/ken/rds/port}
+    DB_DATABASE: ${ssm:/ken/rds/database}
+    DB_USERNAME: ${ssm:/ken/rds/username}
+    DB_PASSWORD: ${ssm:/ken/rds/password}
   iam:
     role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda-laravel-role'
 

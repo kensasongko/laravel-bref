@@ -1,4 +1,7 @@
-# How to
+# Laravel Bref
+
+This is an opiniated guide to deploy Laravel with Bref with several specific requirements. For example we use a separate CDK project to deploy pretty much anything else, from Transit Gateway to RDS.
+
 ## Install Bref and Laravel Bridge
 
 Install bref/laravel-bridge and setup serverless.yml
@@ -19,7 +22,11 @@ functions:
 Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
 
 ## VPC
-To access resources in VPC (e.g., RDS), create 2 SSM StringList parameters for subnet IDs and security group IDs respectively, then add refer to them in serverless.yml by adding the following lines:
+To access resources in VPC (e.g., RDS), modify cdk-core to create 2 SSM StringList parameters for subnet IDs and security group IDs respectively.
+- `/ken/bref/securityGroupIds`: StringList containing security group IDs for lambda
+- `/ken/bref/privateSubnetIds`: StringList containing private subnet IDs for lambda
+
+Then refer to them in serverless.yml by adding the following lines:
 ```
 functions:
   web:
@@ -29,6 +36,18 @@ functions:
 ```
 
 Reference: [Database - Bref](https://bref.sh/docs/environment/database.html)
+## RDS
+To access RDS, store RDS credentials in SSM. Modify cdk-core projects to also store the created credentials in Parameter Store.
+- `/ken/rds/username`: RDS username
+- `/ken/rds/password`: RDS password
+- `/ken/rds/port`: RDS port
+- `/ken/rds/database`: RDS database
+
+For projects with separate read and write connections:
+- `/ken/rds/readWriteHost`: RDS writer endpoint (or RDS proxy read/write endpoint if you use it)
+- `/ken/rds/readOnlyHost`: RDS reader endpoint (or RDS proxy read-only endpoint if you use it)
+Otherwise:
+- `/ken/rds/host`: RDS host
 
 ## Serverless S3 sync
 Install Serverless S3 sync
@@ -86,7 +105,7 @@ provider:
   environment:
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
 ```
-Note: 
+Notes: 
 - Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access.
 - For API, skip this step.
 
@@ -138,7 +157,7 @@ provider:
 Reference: [Serverless Framework - IAM Permissions For Functions](https://www.serverless.com/framework/docs/providers/aws/guide/iam)
 
 ## Cache and Session
-Create a DynamoDB table with partition key called `key` and TTL attribute called `expires_at`. And modify the following lines in your .env file:
+Modify cdk-core proejct to create a DynamoDB table with partition key called `key` and TTL attribute called `expires_at`. And modify the following lines in your .env file:
 ```
 CACHE_DRIVER=dynamodb
 SESSION_DRIVER=dynamodb
@@ -177,6 +196,11 @@ resources:
         VisibilityTimeout: 120
 ```
 
-## Notes:
+## Automatic pruning
+
+Reference: [serverless-prune-plugin](https://www.serverless.com/plugins/serverless-prune-plugin)
+
+## Notes
 - [Serverless offline](https://www.serverless.com/plugins/serverless-offline) doesn't work, for local development refer to [Local development for web apps](https://bref.sh/docs/web-apps/local-development.html).
-- Serverless dev also doesn't work.
+- `serverless dev` also doesn't work.
+- You can use [serverless-s3-local](https://github.com/ar90n/serverless-s3-local), [serverless-dynamodb-local](https://www.serverless.com/plugins/serverless-dynamodb-local) and [serverless-offline-sqs](https://www.npmjs.com/package/serverless-offline-sqs) for local development.
