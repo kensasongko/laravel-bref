@@ -77,12 +77,7 @@ package:
 ```
 Install Serverless S3 sync
 ```
-npm install --save serverless-s3-sync
-```
-Add Serverless S3 Sync plugin to serverless.yml
-```
-plugins:
-  - serverless-s3-sync
+sls plugin install -n serverless-s3-sync
 ```
 Create mappings for CloudFront managed policies.
 ```
