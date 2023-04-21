@@ -50,6 +50,8 @@ Otherwise:
 - `/ken/rds/host`: RDS host
 
 ## Serverless S3 sync
+**TODO: Use OAC**
+
 Install Serverless S3 sync
 ```
 npm install --save serverless-s3-sync

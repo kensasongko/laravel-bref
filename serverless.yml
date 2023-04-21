@@ -1,5 +1,45 @@
 service: laravel
 
+Mappings: 
+  CachePolicyIds:
+    # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+    Amplify:
+      Id: 2e54312d-136d-493c-8eb9-b001f22f67d2
+    CachingDisabled:
+      Id: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+    CachingOptimized:
+      Id: 658327ea-f89d-4fab-a63d-7e88639e58f6
+    CachingOptimizedForUncompressedObjects:
+      Id: b2884449-e4de-46a7-ac36-70bc7f1ddd6d
+    Elemental-MediaPackage:
+      Id: 08627262-05a9-4f76-9ded-b50ca2e3a84f
+  OriginRequestPolicyIds:
+    # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-origin-request-policies.html
+    AllViewer:
+      Id: 216adef6-5c7f-47e4-b989-5492eafa07d3
+    AllViewerAndCloudFrontHeaders-2022-06:
+      Id: 33f36d7e-f396-46d9-90e0-52428a34d9dc
+    AllViewerExceptHostHeader:
+      Id: b689b0a8-53d0-40ab-baf2-68738e2966ac
+    CORS-CustomOrigin:
+      Id: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf
+    Elemental-MediaTailor-PersonalizedManifests:
+      Id: 775133bc-15f2-49f9-abea-afb2e0bf67d2
+    UserAgentRefererHeaders:
+      Id: acba4595-bd28-49b8-b9fe-13317c0390fa
+  ResponseHeadersPolicyIds:
+    # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
+    CORS-and-SecurityHeadersPolicy:
+      Id: e61eb60c-9c35-4d20-a928-2b84e02af89c
+    CORS-With-Preflight:
+      Id: 5cc3b908-e619-4b99-88e5-2cf7f45965bd
+    CORS-with-preflight-and-SecurityHeadersPolicy:
+      Id: eaab4381-ed33-4a86-88ca-d9558dc6cd63
+    SecurityHeadersPolicy:
+      Id: 67f7725c-6f97-4210-82d7-5512b31e9d03
+    SimpleCORS:
+      Id: 60669652-455b-4ae9-85a4-c4c02393f86c
+
 provider:
   name: aws
   # The AWS region in which to deploy (us-east-1 is the default)
@@ -95,12 +135,9 @@ resources:
           DefaultCacheBehavior:
             AllowedMethods: [GET, HEAD]
             TargetOriginId: AssetsBucket
-            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
-            # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
-            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cloudfront-distribution-cachebehavior.html
-            ResponseHeadersPolicyId: 5cc3b908-e619-4b99-88e5-2cf7f45965bd
-            # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
+            CachePolicyId: !FindInMap [ CachePolicyIds, CachingOptimized , Id ]
+            OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
+            ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
             ViewerProtocolPolicy: redirect-to-https
     Queue:
       Type: AWS::SQS::Queue
