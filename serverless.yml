@@ -1,0 +1,104 @@
+service: laravel
+
+provider:
+  name: aws
+  # The AWS region in which to deploy (us-east-1 is the default)
+  region: ap-southeast-1
+  # Environment variables
+  environment:
+    APP_ENV: production # Or use ${sls:stage} if you want the environment to match the stage
+    ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
+    SQS_PREFIX: !Sub 'https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}'
+  iam:
+    role: !Sub 'arn:aws:iam::${AWS::AccountId}:role/lambda-laravel-role'
+
+custom:
+  s3Sync:
+    # Sync public directory to the assets S3 bucket
+    - bucketName: ken-laravel-static-assets
+      localDir: public
+      deleteRemoved: true
+      acl: public-read
+
+package:
+  exclude:
+    - public/**
+    - node_modules/**
+    - resources/assets/**
+    - storage/**
+    - tests/**
+  # Files and directories to exclude from deployment
+  include:
+    - public/index.php
+    - public/robots.txt
+    - public/favicon.ico
+    - app/**
+    - bootstrap/**
+    - config/**
+    - routes/**
+    - vendor/**
+    - artisan
+
+functions:
+
+  # This function runs the Laravel website/API
+  web:
+    handler: public/index.php
+    runtime: php-81-fpm
+    architecture: arm64
+    timeout: 28 # in seconds (API Gateway has a timeout of 29 seconds)
+    events:
+      - httpApi: '*'
+    vpc:
+      securityGroupIds: ${ssm:/ken/bref/securityGroupIds}
+      subnetIds: ${ssm:/ken/bref/privateSubnetIds}
+
+    # This function lets us run artisan commands in Lambda
+  artisan:
+      handler: artisan
+      runtime: php-81-console
+      timeout: 720 # in seconds
+      # Uncomment to also run the scheduler every minute
+      events:
+        - schedule:
+            rate: rate(30 minutes)
+            input: '"schedule:run"'
+
+plugins:
+  # We need to include the Bref plugin
+  - ./vendor/bref/bref
+  - serverless-s3-sync
+
+resources:
+  Resources:
+    AssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ken-laravel-static-assets
+    AssetsCdn:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          PriceClass: PriceClass_100
+          HttpVersion: http2
+          Origins:
+            - Id: AssetsBucket
+              DomainName: !GetAtt AssetsBucket.RegionalDomainName
+              S3OriginConfig: {}
+          DefaultCacheBehavior:
+            AllowedMethods: [GET, HEAD]
+            TargetOriginId: AssetsBucket
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cloudfront-distribution-cachebehavior.html
+            ResponseHeadersPolicyId: 5cc3b908-e619-4b99-88e5-2cf7f45965bd
+            # https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
+            ViewerProtocolPolicy: redirect-to-https
+    Queue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ken-laravel-queue
+        ReceiveMessageWaitTimeSeconds: 20
+        VisibilityTimeout: 120
