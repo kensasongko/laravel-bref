@@ -1,15 +1,33 @@
 # How to
 ## Install Bref and Laravel Bridge
 
-- Install bref/laravel-bridge and setup serverless.yml
+Install bref/laravel-bridge and setup serverless.yml
 ```
 composer require bref/bref bref/laravel-bridge --update-with-dependencies
 php artisan vendor:publish --tag=serverless-config
 ```
-Reference: [Serverless Laravel applications](https://bref.sh/docs/frameworks/laravel.html)
+Reference: [Serverless Laravel applications - Bref](https://bref.sh/docs/frameworks/laravel.html)
 
+## ARM architecture
+Use ARM
+```
+functions:
+  web:
+    architecture: arm64
+```
+
+Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
+## vpc
+Create SSM StringList parameter for subnet IDs and security group IDs and add them to serverless.yml
+```
+functions:
+  web:
+    vpc:
+      securityGroupIds: ${ssm:/ken/bref/securityGroupIds}
+      subnetIds: ${ssm:/ken/bref/privateSubnetIds}
+```
 ## Serverless S3 sync
-- Install Serverless S3 sync
+Install Serverless S3 sync
 ```
 npm install --save serverless-s3-sync
 ```
