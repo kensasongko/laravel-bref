@@ -2,6 +2,14 @@
 
 This is an opiniated guide to deploy Laravel with Bref with several specific requirements. For example we use a separate CDK project to deploy pretty much anything else, from Transit Gateway to RDS.
 
+## Install `serverless` command
+Install the `serverless` command via NPM:
+```
+npm install -g serverless
+```
+
+Reference: [Installation - Bref](https://bref.sh/docs/installation.html)
+
 ## Install Bref and Laravel Bridge
 
 Install bref/laravel-bridge and create initial serverless.yml
