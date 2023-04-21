@@ -65,6 +65,9 @@ custom:
       localDir: public
       deleteRemoved: true
       acl: public-read
+  prune:
+    automatic: true
+    number: 3
 
 package:
   exclude:
@@ -111,9 +114,9 @@ functions:
             input: '"schedule:run"'
 
 plugins:
-  # We need to include the Bref plugin
   - ./vendor/bref/bref
   - serverless-s3-sync
+  - serverless-prune-plugin
 
 resources:
   Resources:

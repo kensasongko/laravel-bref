@@ -266,9 +266,23 @@ resources:
 
 ## Automatic pruning
 
+Serverless deployment creates deployment package and uploads it to lambda. Each deployment creates a new version without deleting the old ones. This can be problematic for accounts with many lambdas (especially monolithic lambdas like this one) because lambda has a code storage limit of 75GB. Use serverless-prune-plugin plugin delete old versions.
+
+Install `serverless-prune-plugin`
+```
+sls plugin install -n serverless-prune-plugin
+```
+Add plugin configuration to serverless.yml
+```
+custom:
+  prune:
+    automatic: true
+    number: 3
+```
+
 Reference: [serverless-prune-plugin](https://www.serverless.com/plugins/serverless-prune-plugin)
 
 ## Notes
 - [Serverless offline](https://www.serverless.com/plugins/serverless-offline) doesn't work, for local development refer to [Local development for web apps](https://bref.sh/docs/web-apps/local-development.html).
-- `serverless dev` also doesn't work.
+- `sls dev` also doesn't work.
 - You can use [serverless-s3-local](https://github.com/ar90n/serverless-s3-local), [serverless-dynamodb-local](https://www.serverless.com/plugins/serverless-dynamodb-local) and [serverless-offline-sqs](https://www.npmjs.com/package/serverless-offline-sqs) for local development.
