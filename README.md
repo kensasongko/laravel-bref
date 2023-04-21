@@ -4,7 +4,7 @@ This is an opiniated guide to deploy Laravel with Bref with several specific req
 
 ## Install Bref and Laravel Bridge
 
-Install bref/laravel-bridge and setup serverless.yml
+Install bref/laravel-bridge and create initial serverless.yml
 ```
 composer require bref/bref bref/laravel-bridge --update-with-dependencies
 php artisan vendor:publish --tag=serverless-config
@@ -36,8 +36,9 @@ functions:
 ```
 
 Reference: [Database - Bref](https://bref.sh/docs/environment/database.html)
+
 ## RDS
-To access RDS, store RDS credentials in SSM. Modify cdk-core projects to also store the created credentials in Parameter Store.
+For RDS access, store RDS credentials in SSM. Modify cdk-core projects to also store the created credentials in Parameter Store.
 - `/ken/rds/username`: RDS username
 - `/ken/rds/password`: RDS password
 - `/ken/rds/port`: RDS port
@@ -75,7 +76,7 @@ package:
     - vendor/**
     - artisan
 ```
-Install Serverless S3 sync
+Install `serverless-s3-sync` plugin.
 ```
 sls plugin install -n serverless-s3-sync
 ```
@@ -166,7 +167,7 @@ provider:
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
 ```
 Notes: 
-- Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access.
+- Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access and some use a different domain for assets.
 - For API, skip this step.
 
 Reference: [Serverless S3 Sync](https://www.serverless.com/plugins/serverless-s3-sync)
@@ -260,10 +261,9 @@ resources:
 ```
 
 ## Automatic pruning
-
 Serverless deployment creates deployment package and uploads it to lambda. Each deployment creates a new version without deleting the old ones. This can be problematic for accounts with many lambdas (especially monolithic lambdas like this one) because lambda has a code storage limit of 75GB. Use serverless-prune-plugin plugin delete old versions.
 
-Install `serverless-prune-plugin`
+Install `serverless-prune-plugin` plugin.
 ```
 sls plugin install -n serverless-prune-plugin
 ```
