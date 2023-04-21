@@ -86,7 +86,7 @@ provider:
   environment:
     ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
 ```
-Note: Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployment are behind VPN access.
+Note: Alternatively, you can use `serverless-lift` as [recommended](https://bref.sh/docs/websites.html) by [Bref](https://bref.sh/docs/frameworks/laravel.html#assets), but we don't use it here because some of our deployments are behind VPN access.
 
 Reference: [Serverless S3 Sync](https://www.serverless.com/plugins/serverless-s3-sync)
 
@@ -134,6 +134,14 @@ provider:
 ```
 
 Reference: [Serverless Framework - IAM Permissions For Functions](https://www.serverless.com/framework/docs/providers/aws/guide/iam)
+
+## Cache and Session
+Create a DynamoDB table with partition key called `key` and TTL attribute called `expires_at`. And modify the following lines in your .env file:
+```
+CACHE_DRIVER=dynamodb
+SESSION_DRIVER=dynamodb
+SESSION_STORE=dynamodb
+```
 
 ## Queue
 Create scheduler:
