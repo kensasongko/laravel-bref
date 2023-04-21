@@ -165,7 +165,8 @@ SESSION_STORE=dynamodb
 ```
 
 ## Queue
-** TODO: Experiment with `serverless-lift` **
+**TODO: Experiment with `serverless-lift`**
+
 Create scheduler:
 ```
 functions:
