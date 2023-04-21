@@ -66,6 +66,7 @@ functions:
   artisan:
       handler: artisan
       runtime: php-81-console
+      architecture: arm64
       timeout: 720 # in seconds
       # Uncomment to also run the scheduler every minute
       events:
