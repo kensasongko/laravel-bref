@@ -127,6 +127,41 @@ resources:
       SimpleCORS:
         Id: 60669652-455b-4ae9-85a4-c4c02393f86c
   Resources:
+    SiteCdn:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Aliases:
+            - !Sub 'ken-site.${ssm:/ken/route53/zoneName}'
+          ViewerCertificate:
+            AcmCertificateArn: ${ssm:/ken/acm/usEast1Arn}
+            MinimumProtocolVersion: TLSv1
+            SslSupportMethod: sni-only
+          PriceClass: PriceClass_100
+          HttpVersion: http2
+          Origins:
+            - Id: HttpApi
+              DomainName: !Sub '${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+              CustomOriginConfig: 
+                OriginProtocolPolicy: https-only
+          DefaultCacheBehavior:
+            AllowedMethods: [GET, HEAD]
+            TargetOriginId: HttpApi
+            CachePolicyId: !FindInMap [ CachePolicyIds, CachingOptimized , Id ]
+            OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
+            ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
+            ViewerProtocolPolicy: redirect-to-https
+    SiteDns:
+      Type: 'AWS::Route53::RecordSet'
+      Properties:
+        HostedZoneId: ${ssm:/ken/route53/zoneId}
+        Name: !Sub 'ken-site.${ssm:/ken/route53/zoneName}'
+        Type: A
+        AliasTarget:
+          # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt SiteCdn.DomainName
     AssetsBucket:
       Type: AWS::S3::Bucket
       Properties:
