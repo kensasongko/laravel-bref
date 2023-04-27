@@ -162,6 +162,7 @@ resources:
         Name: !Sub 'ken-assets.${ssm:/ken/route53/zoneName}'
         Type: A
         AliasTarget:
+          # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html
           HostedZoneId: Z2FDTNDATAQYW2
           DNSName: !GetAtt AssetsCdn.DomainName
     Queue:
