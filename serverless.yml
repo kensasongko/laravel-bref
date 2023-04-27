@@ -7,7 +7,8 @@ provider:
   # Environment variables
   environment:
     APP_ENV: production # Or use ${sls:stage} if you want the environment to match the stage
-    ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
+    #ASSET_URL: !Sub 'https://${AssetsCdn.DomainName}'
+    ASSET_URL: !Sub 'https://ken-assets.${ssm:/ken/route53/zoneName}'
     SQS_PREFIX: !Sub 'https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}'
     DB_CONNECTION: mysql
     DB_HOST: ${ssm:/ken/rds/host}
@@ -25,6 +26,12 @@ custom:
       localDir: public
       deleteRemoved: true
       acl: public-read
+    # The example above will upload index.php to S3 bucket too.
+    # - bucketName: ken-laravel-static-assets
+    #   prefix: css
+    #   localDir: public/css
+    #   deleteRemoved: true
+    #   acl: public-read
   prune:
     automatic: true
     number: 3
@@ -129,6 +136,12 @@ resources:
       Properties:
         DistributionConfig:
           Enabled: true
+          Aliases:
+            - !Sub 'ken-assets.${ssm:/ken/route53/zoneName}'
+          ViewerCertificate:
+            AcmCertificateArn: ${ssm:/ken/acm/usEast1Arn}
+            MinimumProtocolVersion: TLSv1
+            SslSupportMethod: sni-only
           PriceClass: PriceClass_100
           HttpVersion: http2
           Origins:
@@ -142,6 +155,15 @@ resources:
             OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
             ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
             ViewerProtocolPolicy: redirect-to-https
+    AssetsDns:
+      Type: 'AWS::Route53::RecordSet'
+      Properties:
+        HostedZoneId: ${ssm:/ken/route53/zoneId}
+        Name: !Sub 'ken-assets.${ssm:/ken/route53/zoneName}'
+        Type: A
+        AliasTarget:
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt AssetsCdn.DomainName
     Queue:
       Type: AWS::SQS::Queue
       Properties:
