@@ -19,76 +19,10 @@ php artisan vendor:publish --tag=serverless-config
 ```
 Reference: [Serverless Laravel applications - Bref](https://bref.sh/docs/frameworks/laravel.html)
 
-## ARM architecture
-Use ARM, cheaper and better performance.
-```
-functions:
-  web:
-    architecture: arm64
-```
+## CloudFront and Custom Domain
 
-Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
+Creating CloudFront 'manually' instead of using `serverless-lift` gives more flexibility.
 
-## VPC
-To access resources in VPC (e.g., RDS), modify cdk-core to create 2 SSM StringList parameters for subnet IDs and security group IDs respectively.
-- `/ken/bref/securityGroupIds`: StringList containing security group IDs for lambda
-- `/ken/bref/privateSubnetIds`: StringList containing private subnet IDs for lambda
-
-Then refer to them in serverless.yml by adding the following lines:
-```
-functions:
-  web:
-    vpc:
-      securityGroupIds: ${ssm:/ken/bref/securityGroupIds}
-      subnetIds: ${ssm:/ken/bref/privateSubnetIds}
-```
-
-Reference: [Database - Bref](https://bref.sh/docs/environment/database.html)
-
-## RDS
-For RDS access, store RDS credentials in SSM. Modify cdk-core projects to also store the created credentials in Parameter Store.
-- `/ken/rds/username`: RDS username
-- `/ken/rds/password`: RDS password
-- `/ken/rds/port`: RDS port
-- `/ken/rds/database`: RDS database
-
-For projects with separate read and write connections:
-- `/ken/rds/readWriteHost`: RDS writer endpoint (or RDS proxy read/write endpoint if you use it)
-- `/ken/rds/readOnlyHost`: RDS reader endpoint (or RDS proxy read-only endpoint if you use it)
-
-Otherwise:
-- `/ken/rds/host`: RDS host
-
-## Serverless S3 sync
-**TODO: Use OAC**
-
-Sync assets to S3 and exclude them from lambda deployment package.
-
-Exclude public, node\_modules, resources/assets, storage, and tests directories.
-```
-package:
-  exclude:
-    - public/**
-    - node_modules/**
-    - resources/assets/**
-    - storage/**
-    - tests/**
-  # Files and directories to exclude from deployment
-  include:
-    - public/index.php
-    - public/robots.txt
-    - public/favicon.ico
-    - app/**
-    - bootstrap/**
-    - config/**
-    - routes/**
-    - vendor/**
-    - artisan
-```
-Install `serverless-s3-sync` plugin.
-```
-sls plugin install -n serverless-s3-sync
-```
 Create mappings for CloudFront managed policies.
 ```
 resources:
@@ -133,10 +67,127 @@ resources:
         Id: 60669652-455b-4ae9-85a4-c4c02393f86c
 ```
 
+Create CloudFront with custom domain and add record to Route53
+```
+resources:
+  Resources:
+    SiteCdn:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          Aliases:
+            - !Sub 'ken-site.${ssm:/ken/route53/zoneName}'
+          ViewerCertificate:
+            AcmCertificateArn: ${ssm:/ken/acm/usEast1Arn}
+            MinimumProtocolVersion: TLSv1
+            SslSupportMethod: sni-only
+          PriceClass: PriceClass_100
+          HttpVersion: http2
+          Origins:
+            - Id: HttpApi
+              DomainName: !Sub '${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+              CustomOriginConfig: 
+                OriginProtocolPolicy: https-only
+          DefaultCacheBehavior:
+            AllowedMethods: [GET, HEAD]
+            TargetOriginId: HttpApi
+            CachePolicyId: !FindInMap [ CachePolicyIds, CachingOptimized , Id ]
+            OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
+            ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
+            ViewerProtocolPolicy: redirect-to-https
+    SiteDns:
+      Type: 'AWS::Route53::RecordSet'
+      Properties:
+        HostedZoneId: ${ssm:/ken/route53/zoneId}
+        Name: !Sub 'ken-site.${ssm:/ken/route53/zoneName}'
+        Type: A
+        AliasTarget:
+          # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt SiteCdn.DomainName
+```
+
+## ARM architecture
+Use ARM, cheaper and better performance.
+```
+functions:
+  web:
+    architecture: arm64
+```
+
+Reference: [PHP runtimes for AWS Lambda - Bref](https://bref.sh/docs/runtimes/#arm-runtimes)
+
+## VPC
+To access resources in VPC (e.g., RDS), modify cdk-core to create 2 SSM StringList parameters for subnet IDs and security group IDs respectively.
+- `/ken/bref/securityGroupIds`: StringList containing security group IDs for lambda
+- `/ken/bref/privateSubnetIds`: StringList containing private subnet IDs for lambda
+
+Then refer to them in serverless.yml by adding the following lines:
+```
+functions:
+  web:
+    vpc:
+      securityGroupIds: ${ssm:/ken/bref/securityGroupIds}
+      subnetIds: ${ssm:/ken/bref/privateSubnetIds}
+```
+
+Reference: [Database - Bref](https://bref.sh/docs/environment/database.html)
+
+## RDS
+For RDS access, store RDS credentials in SSM. Modify cdk-core projects to also store the created credentials in Parameter Store.
+- `/ken/rds/username`: RDS username
+- `/ken/rds/password`: RDS password
+- `/ken/rds/port`: RDS port
+- `/ken/rds/database`: RDS database
+
+For projects with separate read and write connections:
+- `/ken/rds/readWriteHost`: RDS writer endpoint (or RDS proxy read/write endpoint if you use it)
+- `/ken/rds/readOnlyHost`: RDS reader endpoint (or RDS proxy read-only endpoint if you use it)
+
+Otherwise:
+- `/ken/rds/host`: RDS host
+
+## Serverless S3 sync
+Sync assets to S3 and exclude them from lambda deployment package.
+
+Exclude public, node\_modules, resources/assets, storage, and tests directories.
+```
+package:
+  patterns:
+    - '!public/**'
+    - '!node_modules/**'
+    - '!resources/assets/**'
+    - '!storage/**'
+    - '!tests/**'
+    - 'public/index.php'
+    - 'public/robots.txt'
+    - 'public/favicon.ico'
+    - 'app/**'
+    - 'bootstrap/**'
+    - 'config/**'
+    - 'routes/**'
+    - 'vendor/**'
+    - 'artisan'
+```
+Install `serverless-s3-sync` plugin.
+```
+sls plugin install -n serverless-s3-sync
+```
+
 Add S3 bucket and CloudFront distribution resources to serverless.yml
 ```
 resources:
   Resources:
+    CloudFrontOriginAccessControl:
+      Type: AWS::CloudFront::OriginAccessControl
+      Properties: 
+        OriginAccessControlConfig:
+          Description: Default Origin Access Control
+          Name: !Ref AWS::StackName
+          OriginAccessControlOriginType: s3
+          SigningBehavior: always
+          SigningProtocol: sigv4
     AssetsBucket:
       Type: AWS::S3::Bucket
       Properties:
@@ -146,12 +197,19 @@ resources:
       Properties:
         DistributionConfig:
           Enabled: true
+          Aliases:
+            - !Sub 'ken-assets.${ssm:/ken/route53/zoneName}'
+          ViewerCertificate:
+            AcmCertificateArn: ${ssm:/ken/acm/usEast1Arn}
+            MinimumProtocolVersion: TLSv1
+            SslSupportMethod: sni-only
           PriceClass: PriceClass_100
           HttpVersion: http2
           Origins:
             - Id: AssetsBucket
               DomainName: !GetAtt AssetsBucket.RegionalDomainName
               S3OriginConfig: {}
+              OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
           DefaultCacheBehavior:
             AllowedMethods: [GET, HEAD]
             TargetOriginId: AssetsBucket
@@ -159,16 +217,40 @@ resources:
             OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
             ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
             ViewerProtocolPolicy: redirect-to-https
+    AssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref AssetsBucket
+        PolicyDocument:
+          Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub ${AssetsBucket.Arn}/*
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${AssetsCdn}
+    AssetsDns:
+      Type: 'AWS::Route53::RecordSet'
+      Properties:
+        HostedZoneId: ${ssm:/ken/route53/zoneId}
+        Name: !Sub 'ken-assets.${ssm:/ken/route53/zoneName}'
+        Type: A
+        AliasTarget:
+          # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html
+          HostedZoneId: Z2FDTNDATAQYW2
+          DNSName: !GetAtt AssetsCdn.DomainName
 ```
 Sync public directory to the assets S3 bucket
 ```
 custom:
   s3Sync:
-    # Sync public directory to the assets S3 bucket
+    # Sync css directory to the assets S3 bucket
     - bucketName: ken-laravel-static-assets
-      localDir: public
+      bucketPrefix: css/
+      localDir: public/css/
       deleteRemoved: true
-      acl: public-read
 ```
 Configure `ASSET_URL` environment variables
 ```
