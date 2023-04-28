@@ -52,7 +52,7 @@ functions:
   # This function runs the Laravel website/API
   web:
     handler: public/index.php
-    runtime: php-81-fpm
+    runtime: php-82-fpm
     architecture: arm64
     timeout: 28 # in seconds (API Gateway has a timeout of 29 seconds)
     events:
@@ -64,7 +64,7 @@ functions:
     # This function lets us run artisan commands in Lambda
   artisan:
       handler: artisan
-      runtime: php-81-console
+      runtime: php-82-console
       architecture: arm64
       timeout: 720 # in seconds
       # Uncomment to also run the scheduler every minute
@@ -128,6 +128,13 @@ resources:
           OriginAccessControlOriginType: s3
           SigningBehavior: always
           SigningProtocol: sigv4
+    SiteParamStore:
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: '/ken/site/apiGatewayId'
+        Tier: Standard
+        Type: String
+        Value: !Ref HttpApi
     SiteCdn:
       Type: AWS::CloudFront::Distribution
       Properties:
