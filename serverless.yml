@@ -22,38 +22,35 @@ provider:
 custom:
   s3Sync:
     # Sync public directory to the assets S3 bucket
-    - bucketName: ken-laravel-static-assets
-      localDir: public
-      deleteRemoved: true
-      acl: public-read
+    #- bucketName: ken-laravel-static-assets
+    #  localDir: public
+    #  deleteRemoved: true
+    #    acl: public-read
     # The example above will upload index.php to S3 bucket too.
-    # - bucketName: ken-laravel-static-assets
-    #   prefix: css
-    #   localDir: public/css
-    #   deleteRemoved: true
-    #   acl: public-read
+    - bucketName: ken-laravel-static-assets
+      bucketPrefix: css/
+      localDir: public/css/
+      deleteRemoved: true
   prune:
     automatic: true
     number: 3
 
 package:
-  exclude:
-    - public/**
-    - node_modules/**
-    - resources/assets/**
-    - storage/**
-    - tests/**
-  # Files and directories to exclude from deployment
-  include:
-    - public/index.php
-    - public/robots.txt
-    - public/favicon.ico
-    - app/**
-    - bootstrap/**
-    - config/**
-    - routes/**
-    - vendor/**
-    - artisan
+  patterns:
+    - '!public/**'
+    - '!node_modules/**'
+    - '!resources/assets/**'
+    - '!storage/**'
+    - '!tests/**'
+    - 'public/index.php'
+    - 'public/robots.txt'
+    - 'public/favicon.ico'
+    - 'app/**'
+    - 'bootstrap/**'
+    - 'config/**'
+    - 'routes/**'
+    - 'vendor/**'
+    - 'artisan'
 
 functions:
 
@@ -127,6 +124,15 @@ resources:
       SimpleCORS:
         Id: 60669652-455b-4ae9-85a4-c4c02393f86c
   Resources:
+    CloudFrontOriginAccessControl:
+      Type: AWS::CloudFront::OriginAccessControl
+      Properties: 
+        OriginAccessControlConfig:
+          Description: Default Origin Access Control
+          Name: !Ref AWS::StackName
+          OriginAccessControlOriginType: s3
+          SigningBehavior: always
+          SigningProtocol: sigv4
     SiteCdn:
       Type: AWS::CloudFront::Distribution
       Properties:
@@ -183,6 +189,7 @@ resources:
             - Id: AssetsBucket
               DomainName: !GetAtt AssetsBucket.RegionalDomainName
               S3OriginConfig: {}
+              OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
           DefaultCacheBehavior:
             AllowedMethods: [GET, HEAD]
             TargetOriginId: AssetsBucket
@@ -190,6 +197,20 @@ resources:
             OriginRequestPolicyId: !FindInMap [ OriginRequestPolicyIds, AllViewerExceptHostHeader, Id ]
             ResponseHeadersPolicyId: !FindInMap [ ResponseHeadersPolicyIds, CORS-with-preflight-and-SecurityHeadersPolicy, Id ]
             ViewerProtocolPolicy: redirect-to-https
+    AssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref AssetsBucket
+        PolicyDocument:
+          Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub ${AssetsBucket.Arn}/*
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${AssetsCdn}
     AssetsDns:
       Type: 'AWS::Route53::RecordSet'
       Properties:
