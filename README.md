@@ -14,7 +14,7 @@ Reference: [Installation - Bref](https://bref.sh/docs/installation.html)
 
 Install bref/laravel-bridge and create initial serverless.yml
 ```
-composer require bref/bref bref/laravel-bridge --update-with-dependencies
+composer require bref/bref bref/laravel-bridge -W
 php artisan vendor:publish --tag=serverless-config
 ```
 Reference: [Serverless Laravel applications - Bref](https://bref.sh/docs/frameworks/laravel.html)
@@ -151,7 +151,7 @@ Otherwise:
 ## Serverless S3 sync
 Sync assets to S3 and exclude them from lambda deployment package.
 
-Exclude public, node\_modules, resources/assets, storage, and tests directories.
+Exclude public, node\_modules, resources/assets, storage, and tests directories from deployment package.
 ```
 package:
   patterns:

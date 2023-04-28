@@ -21,12 +21,7 @@ provider:
 
 custom:
   s3Sync:
-    # Sync public directory to the assets S3 bucket
-    #- bucketName: ken-laravel-static-assets
-    #  localDir: public
-    #  deleteRemoved: true
-    #    acl: public-read
-    # The example above will upload index.php to S3 bucket too.
+    # Sync public/css directory to the assets S3 bucket
     - bucketName: ken-laravel-static-assets
       bucketPrefix: css/
       localDir: public/css/
